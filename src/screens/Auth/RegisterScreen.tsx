@@ -60,8 +60,8 @@ const RegisterScreen = ({ route, navigation }: any) => {
       setIsLoading(false);
 
       // Başarılı olursa kullanıcıyı bilgilendir ve Login'e yönlendir
-      Alert.alert('Tebrikler! 🎉', 'Hesabın başarıyla oluşturuldu. Şimdi giriş yapabilirsin.', [
-        { text: 'Giriş Yap', onPress: () => navigation.navigate('Login') }
+      Alert.alert('Aramıza Hoş Geldin! 🎉', 'Hesabın oluşturuldu ve otomatik giriş yapıldı.', [
+        { text: 'Keşfetmeye Başla', onPress: () => console.log('Zaten içerideyiz') }
       ]);
 
     } catch (error) {
