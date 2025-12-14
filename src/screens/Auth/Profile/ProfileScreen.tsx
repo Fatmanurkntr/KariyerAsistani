@@ -1,6 +1,6 @@
 // src/screens/Auth/Profile/ProfileScreen.tsx
 
-import React, { useState, useEffect } from 'react'; // useEffect ekledik
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -11,18 +11,18 @@ import {
     StatusBar,
     Image,
     Alert,
-    ActivityIndicator // Yükleniyor simgesi için
+    ActivityIndicator
 } from 'react-native';
-import auth from '@react-native-firebase/auth'; // Auth eklendi
+import auth from '@react-native-firebase/auth';
 // @ts-ignore
-import { getUserProfile } from '../../../services/auth'; // Yeni yazdığımız fonksiyon
-
+import { getUserProfile } from '../../../services/auth';
+import { ThemeColors } from '../../../theme/types';
 interface ProfileScreenProps {
     route: any;
     navigation: any;
+    activeTheme: ThemeColors; 
 }
 
-// ... (UPCOMING_EVENTS ve APPLICATIONS sabitleri AYNI KALSIN, buraya dokunma) ...
 const UPCOMING_EVENTS = [
     { id: '1', title: 'Kariyer Zirvesi 2025', date: '10 Ara 2025', color: '#E0F2F1', icon: '🗓️' },
     { id: '2', title: 'React Native Workshop', date: '12 Ara 2025', color: '#FFF3E0', icon: '💻' },
@@ -41,14 +41,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ route, navigation }) => {
 
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState({
-        name: 'İsimsiz Kullanıcı',
+        // Düzeltme: Soyadı da burada tutulmalı
+        name: 'İsimsiz',
+        surname: 'Kullanıcı', 
         school: 'Okul Girilmedi',
         department: 'Bölüm Girilmedi',
         bio: 'Henüz biyografi eklenmedi.',
         profileImage: null,
     });
 
-    // ✅ Sayfa açılınca verileri çek
     useEffect(() => {
         fetchUserData();
     }, []);
@@ -59,7 +60,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ route, navigation }) => {
             if (currentUser) {
                 const data = await getUserProfile(currentUser.uid);
                 if (data) {
-                    // Gelen veriyi state'e at (Eksik veri varsa varsayılanı koru)
+                    // Düzeltme: Gelen veriyi (name, surname, school vb.) state'e atıyoruz.
+                    // `...prev` ile varsa eski veriyi korur, `...data` ile yeni gelen veriyi (name, surname, school) günceller.
                     setUserData(prev => ({ ...prev, ...data }));
                 }
             }
@@ -73,7 +75,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ route, navigation }) => {
     const goToSettings = () => {
         navigation.navigate('Settings', {
             currentUser: userData,
-            // Ayarlar sayfasından dönünce anlık güncelleme yapması için:
             onUpdate: (newData: any) => setUserData(prev => ({ ...prev, ...newData }))
         });
     };
@@ -115,7 +116,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ route, navigation }) => {
                     </View>
 
                     <View style={styles.userInfo}>
-                        <Text style={[styles.userName, { color: activeTheme.text }]}>{userData.name}</Text>
+                        {/* KRİTİK DÜZELTME: Ad ve Soyadı birlikte gösteriyoruz. */}
+                        <Text style={[styles.userName, { color: activeTheme.text }]}>{userData.name} {userData.surname}</Text> 
+                        
                         <Text style={[styles.userTitle, { color: activeTheme.textSecondary }]}>{userData.department} Öğrencisi</Text>
 
                         <View style={[styles.tagContainer, { backgroundColor: activeTheme.primary + '15' }]}>
@@ -127,10 +130,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ route, navigation }) => {
                         ) : null}
                     </View>
                 </View>
-
-                {/* ... (Kalan tasarım kodları, StatsContainer vs. aynen kalacak) ... */}
-                {/* ... (Aşağıdaki View ve ScrollView kısımlarını eski koddan aynen bırakabilirsin) ... */}
-                {/* Sadece yer kaplamasın diye buraya yazmıyorum, eski kodunun alt kısmını buraya yapıştır */}
 
                 <View style={[styles.statsContainer, { backgroundColor: activeTheme.surface }]}>
                     <TouchableOpacity style={styles.statItem} onPress={() => handleStatPress('Başvurular')}>
@@ -151,22 +150,50 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ route, navigation }) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* ... (UPCOMING EVENTS ve APPLICATIONS kısmını eski koddan aynen kopyala) ... */}
-                {/* Eski kodun 140. satırından sonrasını buraya yapıştırabilirsin */}
+                
                 <View style={styles.section}>
-                    {/* ... */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Yaklaşan Etkinlikler</Text>
+                        <TouchableOpacity><Text style={[styles.seeAllText, { color: activeTheme.primary }]}>Tümünü Gör</Text></TouchableOpacity>
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                        {UPCOMING_EVENTS.map(event => (
+                            <TouchableOpacity key={event.id} style={[styles.eventCard, { backgroundColor: event.color }]}>
+                                <View style={styles.eventIconBadge}><Text style={styles.iconTextLarge}>{event.icon}</Text></View>
+                                <Text style={styles.eventTitle}>{event.title}</Text>
+                                <Text style={styles.eventDate}>{event.date}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
                 </View>
+                
                 <View style={styles.section}>
-                    {/* ... */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Başvurularım</Text>
+                        <TouchableOpacity><Text style={[styles.seeAllText, { color: activeTheme.primary }]}>Tümünü Gör</Text></TouchableOpacity>
+                    </View>
+                    <View style={styles.listContainer}>
+                        {APPLICATIONS.map(app => (
+                            <View key={app.id} style={[styles.appCard, { backgroundColor: activeTheme.surface }]}>
+                                <View style={[styles.appIconContainer, { backgroundColor: activeTheme.primary + '10' }]}><Text>💼</Text></View>
+                                <View style={styles.appContent}>
+                                    <Text style={[styles.appTitle, { color: activeTheme.text }]}>{app.title}</Text>
+                                    <Text style={[styles.appCompany, { color: activeTheme.textSecondary }]}>{app.company}</Text>
+                                </View>
+                                <View style={[styles.statusBadge, { backgroundColor: app.statusColor + '50' }]}>
+                                    <Text style={[styles.statusText, { color: app.statusColor }]}>{app.status}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
                 </View>
+
             </ScrollView>
         </SafeAreaView>
     );
 };
 
-// ... (Styles kısmını aynen kopyala) ...
 const styles = StyleSheet.create({
-    // Eski style kodlarını buraya yapıştır
     container: { flex: 1 },
     header: { padding: 20, paddingBottom: 5 },
     topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },

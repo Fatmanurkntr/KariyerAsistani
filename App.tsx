@@ -1,46 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useColorScheme, ActivityIndicator, View } from 'react-native';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import auth from '@react-native-firebase/auth'; // Firebase Auth ekledik
+// Not: Firebase kütüphanesini burada artık çağırmıyoruz, AuthContext içinde çağırılıyor
 
-import { Themes } from './src/theme/colors';
+// 👇 YENİ CONTEXT PROVIDER'LARI İÇE AKTAR
+import { AuthProvider } from './src/context/AuthContext'; 
+import { ThemeProvider } from './src/context/ThemeContext'; 
+
+// 👇 ANA NAVİGATÖRÜ İÇE AKTAR
 import AppNavigator from './src/navigation/AppNavigator';
 
-function App() {
-  const scheme = useColorScheme();
-  const activeTheme = scheme === 'dark' ? Themes.dark : Themes.light;
-
-  // -- STATE YÖNETİMİ --
-  const [initializing, setInitializing] = useState(true); // Uygulama ilk açılışta beklesin
-  const [user, setUser] = useState(); // Kullanıcı bilgisini tutan state
-
-  // Kullanıcı durumunu dinleyen fonksiyon (Firebase Listener)
-  function onAuthStateChanged(user: any) {
-    setUser(user);
-    if (initializing) setInitializing(false);
-  }
-
-  useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
-    return subscriber; // Component kapanırsa dinlemeyi durdur
-  }, []);
-
-  // Firebase bağlanırken boş beyaz ekran yerine dönen tekerlek gösterelim
-  if (initializing) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" color="#7C3AED" />
-    </View>
-  );
-
-  return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        {/* Kullanıcı bilgisini (user) navigasyona gönderiyoruz */}
-        <AppNavigator activeTheme={activeTheme} user={user} />
-      </NavigationContainer>
-    </SafeAreaProvider>
-  );
-}
+const App = () => {
+    return (
+        <SafeAreaProvider>
+            {/* 1. ThemeProvider dışta olmalı, çünkü AppNavigator useTheme() kullanır. */}
+            <ThemeProvider> 
+                {/* 2. AuthProvider hemen içinde olmalı, çünkü AppNavigator useAuth() kullanır. */}
+                <AuthProvider>
+                    {/* 3. NavigationContainer en içte olmalı, navigasyonu başlatır. */}
+                    <NavigationContainer>
+                        <AppNavigator />
+                    </NavigationContainer>
+                </AuthProvider>
+            </ThemeProvider>
+        </SafeAreaProvider>
+    );
+};
 
 export default App;
