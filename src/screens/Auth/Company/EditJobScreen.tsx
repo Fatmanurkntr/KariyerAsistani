@@ -1,169 +1,121 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    SafeAreaView,
-    Alert,
-    ActivityIndicator,
-    StatusBar
+import { 
+    View, Text, TextInput, StyleSheet, ScrollView, 
+    TouchableOpacity, SafeAreaView, Alert, ActivityIndicator 
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 
-const COLORS = {
-    background: '#F9FAFB',
-    white: '#FFFFFF',
-    primary: '#7C3AED',
-    text: '#1F2937',
-    border: '#E5E7EB',
-    placeholder: '#9CA3AF'
-};
+const PURPLE_COLOR = '#7C3AED';
 
-const EditJobScreen = ({ route, navigation }: any) => {
-    // Navigasyondan gelen mevcut ilan verisi
-    const { job } = route.params;
-
-    // State'leri mevcut verilerle dolduruyoruz
-    const [title, setTitle] = useState(job.title);
-    const [location, setLocation] = useState(job.location);
-    const [type, setType] = useState(job.type);
-    const [description, setDescription] = useState(job.description);
-    const [requirements, setRequirements] = useState(job.requirements);
-    const [applicationLink, setApplicationLink] = useState(job.applicationLink || ''); 
+const EditEventScreen = ({ route, navigation }: any) => {
+    const { event } = route.params;
+    
+    // State tanımlamaları
+    const [title, setTitle] = useState(event.title);
+    const [date, setDate] = useState(event.date);
+    const [location, setLocation] = useState(event.location);
+    // 🔥 HAFIZADAKİ VERİ: Etkinlik linki düzenleme alanı eklendi
+    const [eventLink, setEventLink] = useState(event.eventLink || '');
+    const [description, setDescription] = useState(event.description);
     const [loading, setLoading] = useState(false);
 
-    const handleUpdateJob = async () => {
-        if (!title || !location || !description) {
+    const handleUpdate = async () => {
+        if (!title || !date || !eventLink) {
             Alert.alert("Eksik Bilgi", "Lütfen gerekli alanları doldurun.");
             return;
         }
 
         setLoading(true);
-
         try {
-            // 🔥 GÜNCELLEME İŞLEMİ (Update)
-            await firestore().collection('JobPostings').doc(job.id).update({
-                title,
-                location,
-                type,
+            await firestore().collection('EventPostings').doc(event.id).update({
+                title, 
+                date, 
+                location, 
+                eventLink, // 🔥 Veritabanı güncellemesine eklendi
                 description,
-                requirements,
-                applicationLink,
-                updatedAt: firestore.FieldValue.serverTimestamp(), // Güncellenme tarihi
+                updatedAt: firestore.FieldValue.serverTimestamp(),
             });
-
-            setLoading(false);
-            Alert.alert("Başarılı", "İlan güncellendi! ✅", [
+            
+            Alert.alert("Başarılı", "Etkinlik güncellendi.", [
                 { text: "Tamam", onPress: () => navigation.goBack() }
             ]);
-
-        } catch (error: any) {
+        } catch (error) {
+            // 🔥 DÜZELTİLDİ: 'error' değişkeni konsola yazılarak hata giderildi
+            console.error("Güncelleme Hatası:", error);
+            Alert.alert("HATA", "Güncelleme başarısız oldu.");
+        } finally {
             setLoading(false);
-            Alert.alert("Hata", error.message);
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            
-            {/* HEADER */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={{ fontSize: 24 }}>⬅️</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Text style={styles.backText}>Vazgeç</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>İlanı Düzenle</Text>
-                <View style={{ width: 40 }} />
+                <Text style={styles.headerTitle}>ETKİNLİĞİ DÜZENLE</Text>
+                <View style={{ width: 50 }} />
             </View>
-
+            
             <ScrollView contentContainerStyle={styles.form}>
+                <Text style={styles.label}>ETKİNLİK ADI</Text>
+                <TextInput style={styles.input} value={title} onChangeText={setTitle} />
                 
-                <Text style={styles.label}>İlan Başlığı</Text>
-                <TextInput
-                    style={styles.input}
-                    value={title}
-                    onChangeText={setTitle}
-                />
+                <Text style={styles.label}>TARİH</Text>
+                <TextInput style={styles.input} value={date} onChangeText={setDate} />
+                
+                <Text style={styles.label}>KONUM</Text>
+                <TextInput style={styles.input} value={location} onChangeText={setLocation} />
 
-                <Text style={styles.label}>Konum</Text>
-                <TextInput
-                    style={styles.input}
-                    value={location}
-                    onChangeText={setLocation}
-                />
-
-                <Text style={styles.label}>Başvuru Linki</Text>
-                <TextInput
-                    style={styles.input}
-                    value={applicationLink}
-                    onChangeText={setApplicationLink}
+                {/* 🔥 HAFIZADAKİ VERİ: Yeni Link Girişi */}
+                <Text style={styles.label}>KATILIM LİNKİ</Text>
+                <TextInput 
+                    style={styles.input} 
+                    value={eventLink} 
+                    onChangeText={setEventLink} 
+                    autoCapitalize="none" 
                     keyboardType="url"
-                    autoCapitalize="none"
                 />
 
-                <Text style={styles.label}>Çalışma Şekli</Text>
-                <View style={styles.typeContainer}>
-                    {['Staj', 'Yarı Zamanlı', 'Tam Zamanlı'].map((item) => (
-                        <TouchableOpacity
-                            key={item}
-                            style={[
-                                styles.typeButton,
-                                type === item && styles.activeTypeButton
-                            ]}
-                            onPress={() => setType(item)}
-                        >
-                            <Text style={[styles.typeText, type === item && { color: '#FFF' }]}>{item}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <Text style={styles.label}>İş Tanımı</Text>
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={description}
-                    onChangeText={setDescription}
-                    multiline
+                <Text style={styles.label}>AÇIKLAMA</Text>
+                <TextInput 
+                    style={[styles.input, styles.textArea]} 
+                    value={description} 
+                    onChangeText={setDescription} 
+                    multiline 
                 />
-
-                <Text style={styles.label}>Aranan Nitelikler</Text>
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={requirements}
-                    onChangeText={setRequirements}
-                    multiline
-                />
-
+                
                 <TouchableOpacity 
-                    style={styles.submitButton}
-                    onPress={handleUpdateJob}
+                    style={[styles.button, loading && { opacity: 0.7 }]} 
+                    onPress={handleUpdate} 
                     disabled={loading}
                 >
-                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitButtonText}>Değişiklikleri Kaydet 💾</Text>}
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Değişiklikleri Kaydet</Text>}
                 </TouchableOpacity>
-
             </ScrollView>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.background },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.border },
-    backButton: { padding: 4 },
-    headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
-    form: { padding: 20, paddingBottom: 50 },
-    label: { fontSize: 14, fontWeight: '600', color: '#4B5563', marginBottom: 8, marginTop: 12 },
-    input: { backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 12, fontSize: 16, color: COLORS.text },
-    textArea: { height: 100, textAlignVertical: 'top' },
-    typeContainer: { flexDirection: 'row', gap: 10 },
-    typeButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white },
-    activeTypeButton: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    typeText: { fontSize: 13, color: '#4B5563' },
-    submitButton: { backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 30, marginBottom: 40 },
-    submitButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
+    container: { flex: 1, backgroundColor: '#fff' },
+    header: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: 20, 
+        borderBottomWidth: 1, 
+        borderBottomColor: '#f0f0f0' 
+    },
+    headerTitle: { fontSize: 13, fontWeight: '800', letterSpacing: 1 },
+    backText: { color: '#666', fontWeight: '600' },
+    form: { padding: 25 },
+    label: { fontSize: 10, fontWeight: '800', color: '#999', marginBottom: 8 },
+    input: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#eee', marginBottom: 15, color: '#111827' },
+    textArea: { height: 120, textAlignVertical: 'top' },
+    button: { backgroundColor: PURPLE_COLOR, padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+    buttonText: { color: '#fff', fontWeight: 'bold' }
 });
 
-export default EditJobScreen;
+export default EditEventScreen;

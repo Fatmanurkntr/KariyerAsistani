@@ -25,7 +25,7 @@ const HomeScreen = ({ navigation }: any) => {
             </TouchableOpacity>
 
             <View style={styles.content}>
-                <Text style={styles.title}>🏠 Ana Sayfa</Text>
+                <Text style={styles.title}> Ana Sayfa</Text>
                 <Text style={styles.text}>Tebrikler! Başarıyla giriş yaptın.</Text>
                 <Text style={styles.text}>Buraya iş ilanları gelecek.</Text>
 

@@ -1,14 +1,13 @@
-// src/screens/Home/FeedScreen.tsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
     View, Text, StyleSheet, FlatList, StatusBar, SafeAreaView, 
-    TextInput, Dimensions, TouchableOpacity, Image, ActivityIndicator, Linking, Alert, ScrollView
+    TextInput, Dimensions, TouchableOpacity, Image, ActivityIndicator, Linking, Alert
 } from 'react-native';
+import firestore from '@react-native-firebase/firestore'; 
+import auth from '@react-native-firebase/auth'; // Auth eklendi
 import { ThemeColors } from '../../theme/types';
 import JobCard, { JobPost } from '../../components/JobCard'; 
 import HorizontalJobCard from '../../components/HorizontalJobCard'; 
-// CategoryFilter'ı kaldırdık, yerine modern Chip butonlar ekledik
 import QuickAccessCard from '../../components/QuickAccessCard'; 
 import { useNavigation } from '@react-navigation/native'; 
 
@@ -22,11 +21,12 @@ import { buildSearchQuery } from '../../utils/searchLogic';
 const { width } = Dimensions.get('window');
 
 const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const flatListRef = useRef<FlatList>(null); 
+  const currentUser = auth().currentUser;
   
-  // State
-  const [activeTab, setActiveTab] = useState('Tümü'); // Filtre Sekmeleri
+  // --- STATE YAPISI ---
+  const [activeTab, setActiveTab] = useState('Tümü'); 
   const [activeTopic, setActiveTopic] = useState<string | null>(null); 
   const [searchText, setSearchText] = useState('');
   const [opportunities, setOpportunities] = useState<JobPost[]>([]); 
@@ -34,7 +34,36 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
   const [hasSearched, setHasSearched] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false); 
 
-  // VERİ ÇEKME
+  // Admin Onaylı Önerilen İlanlar State
+  const [recommendedAds, setRecommendedAds] = useState<JobPost[]>([]);
+  const [isRecLoading, setIsRecLoading] = useState(true);
+
+  // --- 1. ONAYLANAN İLANLARI CANLI DİNLE (Senkronizasyon) ---
+  useEffect(() => {
+    setIsRecLoading(true);
+    // onSnapshot kullanarak favori veya başvuru değişimlerini anlık yakalıyoruz
+    const unsubscribe = firestore()
+        .collection('JobPostings')
+        .where('status', '==', 'approved')
+        .limit(10)
+        .onSnapshot(querySnapshot => {
+            const ads = querySnapshot?.docs.map(doc => ({
+                id: doc.id,
+                company: doc.data().companyName || 'Kurumsal Firma',
+                title: doc.data().title || 'İsimsiz İlan',
+                ...doc.data()
+            })) as JobPost[];
+            setRecommendedAds(ads);
+            setIsRecLoading(false);
+        }, error => {
+            console.error("Firestore Dinleme Hatası:", error);
+            setIsRecLoading(false);
+        });
+
+    return () => unsubscribe();
+  }, []);
+
+  // --- 2. SEKTÖREL VERİ ÇEKME ---
   useEffect(() => {
     if (!activeTopic) return;
 
@@ -46,7 +75,6 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
         
         try {
             let allData: JobPost[] = [];
-            // "Tümü", "İş İlanı", "Etkinlikler" gibi sekmelere göre veri çek
             if (activeTab === 'Tümü') {
                 const [jobs, events] = await Promise.all([
                     fetchJobs(buildSearchQuery('İş', activeTopic), 'İş'),
@@ -56,7 +84,6 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
             } else if (activeTab === 'Etkinlikler') {
                 allData = await fetchEvents(buildSearchQuery('Etkinlikler', activeTopic));
             } else {
-                // Staj veya İş İlanı
                 const type = activeTab === 'Staj' ? 'Staj' : 'İş';
                 allData = await fetchJobs(buildSearchQuery(type, activeTopic), type);
             }
@@ -68,8 +95,9 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
         }
     };
     loadData();
-  }, [activeTab, activeTopic]); // Tab değişince de yeniden yükle
+  }, [activeTab, activeTopic]);
 
+  // --- YARDIMCI FONKSİYONLAR ---
   const handleCardPress = (link?: string) => {
       if (link && link.startsWith('http')) {
           Linking.openURL(link).catch(() => Alert.alert('Hata', 'Bağlantı açılamadı.'));
@@ -88,8 +116,8 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
-      <StatusBar barStyle={activeTheme.background === '#000000' || activeTheme.background === '#0A0A32' ? 'light-content' : 'dark-content'} />
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme?.background || '#FFFFFF' }]}>
+      <StatusBar barStyle={activeTheme?.background === '#000000' || activeTheme?.background === '#0A0A32' ? 'light-content' : 'dark-content'} />
       
       <FlatList
           ref={flatListRef}
@@ -100,38 +128,36 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
               <View>
-                {/* 1. HEADER (Profil İkonlu) */}
+                {/* 1. HEADER */}
                 <View style={styles.headerTop}>
                   <View>
-                    <Text style={[styles.greeting, { color: activeTheme.textSecondary }]}>Tekrar Hoş Geldin 👋</Text>
-                    <Text style={[styles.title, { color: activeTheme.text }]}>Kariyerini Şekillendir</Text>
+                    <Text style={[styles.greeting, { color: activeTheme?.textSecondary }]}>Tekrar Hoş Geldin </Text>
+                    <Text style={[styles.title, { color: activeTheme?.text }]}>Kariyerini Şekillendir</Text>
                   </View>
                   <TouchableOpacity 
-                    onPress={() => navigation.navigate('ProfileDetail' as never)} 
-                    style={[styles.profileButton, { borderColor: activeTheme.surface, backgroundColor: activeTheme.surface }]}
+                    onPress={() => navigation.navigate('ProfileDetail')} 
+                    style={[styles.profileButton, { borderColor: activeTheme?.surface, backgroundColor: activeTheme?.surface }]}
                   >
-                    <Feather name="user" size={24} color={activeTheme.primary} />
+                    <Feather name="user" size={24} color={activeTheme?.primary} />
                   </TouchableOpacity>
                 </View>
 
-                {/* 2. BUZLU ARAMA BARI (Glassmorphism) 🧊 */}
+                {/* 2. ARAMA BARI */}
                 <View style={[styles.searchContainer, { 
-                    backgroundColor: activeTheme.background === '#000000' || activeTheme.background === '#0A0A32'
-                        ? 'rgba(255, 255, 255, 0.1)' // Koyu modda beyazın şeffafı
-                        : 'rgba(0, 0, 0, 0.05)',     // Açık modda siyahın şeffafı
-                    borderColor: 'rgba(255,255,255,0.1)'
+                    backgroundColor: activeTheme?.surface || 'rgba(0,0,0,0.05)',
+                    borderColor: 'rgba(0,0,0,0.05)'
                 }]}>
-                    <Feather name="search" size={20} color={activeTheme.textSecondary} style={{ marginRight: 10 }} />
+                    <Feather name="search" size={20} color={activeTheme?.textSecondary} style={{ marginRight: 10 }} />
                     <TextInput 
                         placeholder="İlan veya şirket ara..." 
-                        placeholderTextColor={activeTheme.textSecondary} 
-                        style={[styles.searchInput, { color: activeTheme.text }]} 
+                        placeholderTextColor={activeTheme?.textSecondary} 
+                        style={[styles.searchInput, { color: activeTheme?.text }]} 
                         value={searchText} 
                         onChangeText={setSearchText} 
                     />
                 </View>
                 
-                {/* 3. FİLTRE ÇİPLERİ (Modern Hap Butonlar) */}
+                {/* 3. FİLTRE ÇİPLERİ */}
                 <View style={styles.filterContainer}>
                     {['Tümü', 'İş İlanı', 'Staj', 'Etkinlikler'].map((tab) => (
                         <TouchableOpacity
@@ -140,13 +166,13 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
                             style={[
                                 styles.filterChip,
                                 activeTab === tab 
-                                    ? { backgroundColor: activeTheme.primary } 
-                                    : { backgroundColor: activeTheme.surface, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }
+                                    ? { backgroundColor: activeTheme?.primary } 
+                                    : { backgroundColor: activeTheme?.surface }
                             ]}
                         >
                             <Text style={[
                                 styles.filterText, 
-                                { color: activeTab === tab ? '#FFF' : activeTheme.textSecondary }
+                                { color: activeTab === tab ? '#FFF' : activeTheme?.textSecondary }
                             ]}>
                                 {tab}
                             </Text>
@@ -154,27 +180,20 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
                     ))}
                 </View>
 
-                {/* 4. SONUÇ LİSTESİ (Katlanabilir) */}
+                {/* 4. SEKTÖR SONUÇLARI */}
                 {isLoading ? (
                     <View style={styles.statusContainer}>
-                        <ActivityIndicator size="large" color={activeTheme.primary} />
-                        <Text style={[styles.statusText, { color: activeTheme.textSecondary }]}>Fırsatlar taranıyor...</Text>
+                        <ActivityIndicator size="large" color={activeTheme?.primary} />
+                        <Text style={[styles.statusText, { color: activeTheme?.textSecondary }]}>Fırsatlar taranıyor...</Text>
                     </View>
                 ) : activeTopic && filteredList.length > 0 ? (
                     <View style={styles.sectionContainer}>
-                      <TouchableOpacity 
-                        activeOpacity={0.7}
-                        onPress={() => setIsCollapsed(!isCollapsed)}
-                        style={styles.collapseHeader}
-                      >
-                        <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>
-                          {activeTopic} Fırsatları ✨ ({filteredList.length})
+                      <TouchableOpacity onPress={() => setIsCollapsed(!isCollapsed)} style={styles.collapseHeader}>
+                        <Text style={[styles.sectionTitle, { color: activeTheme?.text }]}>
+                          {activeTopic} Fırsatları ({filteredList.length})
                         </Text>
-                        <View style={[styles.collapseIcon, { backgroundColor: activeTheme.surface }]}>
-                            <Feather name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={20} color={activeTheme.primary} />
-                        </View>
+                        <Feather name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={20} color={activeTheme?.primary} />
                       </TouchableOpacity>
-                      
                       {!isCollapsed && (
                         <FlatList 
                           data={filteredList} 
@@ -185,23 +204,31 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
                         />
                       )}
                     </View>
-                ) : hasSearched && activeTopic && (
-                    <View style={styles.statusContainer}><Text style={{ color: activeTheme.textSecondary, textAlign: 'center' }}>"{activeTopic}" için sonuç bulunamadı.</Text></View>
-                )}
+                ) : null}
 
-                {/* 5. SEKTÖR SEÇİMİ (GRID) - Emojiler kaldı, yapı korundu */}
+                {/* 5. SEKTÖR GRID (Minimalist İkonlar) */}
                 <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: activeTheme.text, paddingHorizontal: 20, marginBottom: 15 }]}>Sektör Seç & Keşfet</Text>
+                  <Text style={[styles.sectionTitle, { color: activeTheme?.text, paddingHorizontal: 20, marginBottom: 15 }]}>Sektör Seç & Keşfet</Text>
                   <View style={styles.gridContainer}>
                       {[
-                          { id: '1', title: 'Yazılım', icon: '💻', color: '#4F46E5' }, { id: '2', title: 'Tasarım', icon: '🎨', color: '#EC4899' },
-                          { id: '3', title: 'Yapay Zeka', icon: '🤖', color: '#8B5CF6' }, { id: '4', title: 'Girişim', icon: '🚀', color: '#F59E0B' },
-                          { id: '5', title: 'Oyun Geliş.', icon: '🎮', color: '#10B981' }, { id: '6', title: 'Veri Bilimi', icon: '📊', color: '#6366F1' },
-                          { id: '7', title: 'Siber Güv.', icon: '🛡️', color: '#EF4444' }, { id: '8', title: 'Web3', icon: '🔗', color: '#3B82F6' },
-                          { id: '9', title: 'Pazarlama', icon: '📈', color: '#14B8A6' },
+                          { id: '1', title: 'Yazılım', icon: 'code', color: '#4F46E5' }, 
+                          { id: '2', title: 'Tasarım', icon: 'layers', color: '#EC4899' },
+                          { id: '3', title: 'Yapay Zeka', icon: 'cpu', color: '#8B5CF6' }, 
+                          { id: '4', title: 'Girişim', icon: 'zap', color: '#F59E0B' },
+                          { id: '5', title: 'Oyun Geliş.', icon: 'play-circle', color: '#10B981' }, 
+                          { id: '6', title: 'Veri Bilimi', icon: 'pie-chart', color: '#6366F1' },
+                          { id: '7', title: 'Siber Güv.', icon: 'shield', color: '#EF4444' }, 
+                          { id: '8', title: 'Web3', icon: 'link', color: '#3B82F6' },
+                          { id: '9', title: 'Pazarlama', icon: 'trending-up', color: '#14B8A6' },
                       ].map((item) => (
                           <View key={item.id} style={styles.gridItemWrapper}>
-                              <QuickAccessCard title={item.title} icon={item.icon} color={item.color} activeTheme={activeTheme} onPress={() => handleQuickSearch(item.title)} />
+                              <QuickAccessCard 
+                                title={item.title} 
+                                icon={<Feather name={item.icon as any} size={20} color="#FFF" />} 
+                                color={item.color} 
+                                activeTheme={activeTheme} 
+                                onPress={() => handleQuickSearch(item.title)} 
+                              />
                           </View>
                       ))}
                   </View>
@@ -209,7 +236,7 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
 
                 {/* 6. POPÜLER ŞİRKETLER */}
                 <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: activeTheme.text, paddingHorizontal: 20, marginBottom: 15 }]}>Popüler Şirketler 🚀</Text>
+                  <Text style={[styles.sectionTitle, { color: activeTheme?.text, paddingHorizontal: 20, marginBottom: 15 }]}>Popüler Şirketler</Text>
                   <FlatList 
                     data={[
                         { id: 'c1', name: 'Trendyol', logo: 'https://cdn.webrazzi.com/uploads/2018/06/trendyol-logo-518.png' }, 
@@ -218,10 +245,10 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
                     ]} 
                     renderItem={({item}) => (
                         <View style={{ alignItems: 'center', marginRight: 20 }}>
-                            <View style={[styles.companyLogoBox, { borderColor: activeTheme.background === '#000' ? '#333' : '#eee', backgroundColor: '#fff' }]}>
+                            <View style={[styles.companyLogoBox, { borderColor: activeTheme?.surface, backgroundColor: '#fff' }]}>
                                 <Image source={{ uri: item.logo }} style={{ width: 35, height: 35 }} resizeMode="contain" />
                             </View>
-                            <Text style={{ fontSize: 12, marginTop: 8, color: activeTheme.text, fontWeight: '500' }}>{item.name}</Text>
+                            <Text style={{ fontSize: 12, marginTop: 8, color: activeTheme?.text }}>{item.name}</Text>
                         </View>
                     )} 
                     keyExtractor={item => item.id} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }} 
@@ -230,31 +257,38 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
 
                 {/* 7. ÖNERİLENLER */}
                 <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: activeTheme.text, paddingHorizontal: 20, marginBottom: 12 }]}>Sizin İçin Önerilenler ✨</Text>
-                  <FlatList 
-                    data={filteredList.length > 0 ? filteredList.slice(0, 5) : []} 
-                    renderItem={({item}) => (<HorizontalJobCard item={item} activeTheme={activeTheme} onPress={() => handleCardPress(item.link)} />)} 
-                    keyExtractor={(item) => 'rec-' + item.id} 
-                    horizontal showsHorizontalScrollIndicator={false} 
-                    contentContainerStyle={{ paddingHorizontal: 20 }} 
-                    ListEmptyComponent={<Text style={{marginLeft: 20, color: activeTheme.textSecondary}}>Henüz öneri yok.</Text>}
-                  />
+                  <Text style={[styles.sectionTitle, { color: activeTheme?.text, paddingHorizontal: 20, marginBottom: 12 }]}>Sizin İçin Önerilenler</Text>
+                  {isRecLoading ? <ActivityIndicator color={activeTheme?.primary} /> : (
+                    <FlatList 
+                        data={recommendedAds} 
+                        renderItem={({item}) => (
+                            <HorizontalJobCard 
+                                item={item} 
+                                activeTheme={activeTheme} 
+                                onPress={() => navigation.navigate('JobDetail', { item: item })} 
+                            />
+                        )} 
+                        keyExtractor={(item) => 'rec-' + item.id} 
+                        horizontal showsHorizontalScrollIndicator={false} 
+                        contentContainerStyle={{ paddingHorizontal: 20 }} 
+                    />
+                  )}
                 </View>
 
-                {/* 8. KARİYER REHBERİ (Modern Kartlar) */}
+                {/* 8. KARİYER REHBERİ */}
                 <View style={[styles.sectionContainer, { marginBottom: 40 }]}>
-                  <Text style={[styles.sectionTitle, { color: activeTheme.text, paddingHorizontal: 20, marginBottom: 15 }]}>Kariyer Rehberi 💡</Text>
+                  <Text style={[styles.sectionTitle, { color: activeTheme?.text, paddingHorizontal: 20, marginBottom: 15 }]}>Kariyer Rehberi</Text>
                   <FlatList 
                     data={[
-                        { id: 'tip1', title: 'Etkili CV Hazırlama', duration: '5 dk', icon: 'file-text', bg: '#EEF2FF', iconColor: '#4F46E5' }, 
-                        { id: 'tip2', title: 'Mülakat Tüyoları', duration: '3 dk', icon: 'video', bg: '#FFF7ED', iconColor: '#F97316' }
+                        { id: 'tip1', title: 'Etkili CV', icon: 'file-text', bg: '#EEF2FF', color: '#4F46E5' }, 
+                        { id: 'tip2', title: 'Mülakat', icon: 'video', bg: '#FFF7ED', color: '#F97316' }
                     ]} 
                     renderItem={({item}) => (
                     <TouchableOpacity style={[styles.guideCard, { backgroundColor: item.bg }]}>
-                        <Feather name={item.icon} size={32} color={item.iconColor} />
+                        <Feather name={item.icon as any} size={24} color={item.color} />
                         <View>
                             <Text style={styles.guideTitle}>{item.title}</Text>
-                            <Text style={styles.guideSubtitle}>{item.duration} okuma</Text>
+                            <Text style={styles.guideSubtitle}>Yeni İçerik</Text>
                         </View>
                     </TouchableOpacity>
                     )} 
@@ -271,51 +305,25 @@ const FeedScreen: React.FC<{activeTheme: ThemeColors}> = ({ activeTheme }) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   listContent: { paddingBottom: 20 },
-  
-  // Header
   headerTop: { paddingHorizontal: 20, paddingTop: 20, marginBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { fontSize: 14, marginBottom: 4, fontWeight: '500' },
+  greeting: { fontSize: 14, fontWeight: '500' },
   title: { fontSize: 24, fontWeight: '800' },
-  
-  profileButton: {
-    width: 44, height: 44, borderRadius: 22, 
-    justifyContent: 'center', alignItems: 'center', borderWidth: 1, 
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, elevation: 2
-  },
-
-  // Arama
-  searchContainer: { 
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 24, paddingHorizontal: 15, height: 50, borderRadius: 16, borderWidth: 1 
-  },
+  profileButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 1, elevation: 2 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 24, paddingHorizontal: 15, height: 50, borderRadius: 16, borderWidth: 1 },
   searchInput: { flex: 1, fontSize: 15, fontWeight: '500' },
-
-  // Filtreler
-  filterContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 20 },
-  filterChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
+  filterContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 20 },
+  filterChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, marginRight: 10 },
   filterText: { fontSize: 13, fontWeight: '600' },
-
-  // Bölümler
   sectionContainer: { marginVertical: 15 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
-  
-  // Grid
+  sectionTitle: { fontSize: 20, fontWeight: '700' },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, justifyContent: 'space-between' },
   gridItemWrapper: { width: (width - 60) / 3, marginBottom: 15 },
-  
-  // Durumlar
-  statusContainer: { marginVertical: 30, alignItems: 'center', paddingHorizontal: 40 },
+  statusContainer: { marginVertical: 30, alignItems: 'center' },
   statusText: { marginTop: 12, fontWeight: '600' },
-  
-  // Katlanabilir Başlık
   collapseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
-  collapseIcon: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', elevation: 1 },
-  
-  // Şirket Logosu
   companyLogoBox: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', borderWidth: 1, elevation: 2 },
-
-  // Rehber Kartı
-  guideCard: { width: 160, height: 160, borderRadius: 24, padding: 16, marginRight: 16, justifyContent: 'space-between', elevation: 2 },
-  guideTitle: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 4 },
+  guideCard: { width: 180, height: 90, borderRadius: 20, padding: 16, marginRight: 16, flexDirection: 'row', alignItems: 'center', gap: 12, elevation: 2 },
+  guideTitle: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
   guideSubtitle: { fontSize: 12, color: '#6B7280' }
 });
 

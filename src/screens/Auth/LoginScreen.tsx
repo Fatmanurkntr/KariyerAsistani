@@ -13,6 +13,7 @@ import {
     ViewStyle,
     TextStyle
 } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather'; 
 import CustomButton from '../../components/CustomButton';
 import { ThemeColors } from '../../theme/types';
 import { useAuth } from '../../context/AuthContext'; 
@@ -48,13 +49,10 @@ const LoginScreen = ({ route, navigation }: any) => {
 
             if (user && !user.emailVerified) {
                 await logoutUser();
-                Alert.alert('E-posta Onaylanmadı ⚠️', 'Hesabınızı doğrulayın.');
+                Alert.alert('Hata', 'Lütfen e-posta adresinizi doğrulayın.');
                 setIsLoading(false);
                 return; 
             }
-
-            // KRİTİK DÜZELTME: Sadece rolü gönderiyoruz. AuthContext Firebase Listener üzerinden
-            // kullanıcı bilgilerini otomatik alacak ve yönlendirmeyi tetikleyecektir.
             await login(mode);
 
         } catch (e: any) {
@@ -100,7 +98,11 @@ const LoginScreen = ({ route, navigation }: any) => {
                 {/* 1. HEADER & LOGO ALANI */}
                 <View style={styles.headerContainer}>
                     <View style={[styles.logoPlaceholder, { backgroundColor: currentTheme.surface }]}>
-                        <Text style={{ fontSize: 40 }}>{mode === 'student' ? '🎓' : '🏢'}</Text>
+                        <Feather 
+                            name={mode === 'student' ? 'user' : 'briefcase'} 
+                            size={32} 
+                            color={currentTheme.primary} 
+                        />
                     </View>
                     <Text style={[styles.welcomeText, { color: currentTheme.text }]}>
                         {mode === 'student' ? 'Tekrar Hoş Geldin!' : 'Kurumsal Portal'}
@@ -117,8 +119,9 @@ const LoginScreen = ({ route, navigation }: any) => {
 
                     {/* Email Input */}
                     <View style={[styles.inputContainer, { backgroundColor: currentTheme.surface }]}>
+                        <Feather name="mail" size={18} color={currentTheme.textSecondary} style={{marginRight: 10}} />
                         <TextInput
-                            placeholder={mode === 'student' ? "Öğrenci E-postası" : "Şirket E-postası"}
+                            placeholder={mode === 'student' ? "E-posta" : "Şirket E-postası"}
                             placeholderTextColor={currentTheme.textSecondary + '80'} 
                             value={email}
                             onChangeText={setEmail}
@@ -130,6 +133,7 @@ const LoginScreen = ({ route, navigation }: any) => {
 
                     {/* Şifre Input */}
                     <View style={[styles.inputContainer, { backgroundColor: currentTheme.surface }]}>
+                        <Feather name="lock" size={18} color={currentTheme.textSecondary} style={{marginRight: 10}} />
                         <TextInput
                             placeholder="Şifre"
                             placeholderTextColor={currentTheme.textSecondary + '80'}
@@ -140,17 +144,13 @@ const LoginScreen = ({ route, navigation }: any) => {
                         />
                     </View>
                     
-                    {/* KAYIT OL VE ŞİFREMİ UNUTTUM YANYANA BÖLÜMÜ */}
                     <View style={styles.forgotRegisterRow}>
-                        
-                        {/* 1. Kayıt Ol Linki */}
                         <TouchableOpacity onPress={navigateToRegister}>
                             <Text style={[styles.registerLinkText, { color: currentTheme.primary }]}>
                                 Hesabın yok mu? Kayıt Ol
                             </Text>
                         </TouchableOpacity>
 
-                        {/* 2. Şifremi Unuttum Linki */}
                         <TouchableOpacity style={styles.forgotPassContainer}>
                             <Text style={[styles.forgotPassText, { color: currentTheme.textSecondary }]}>
                                 Şifreni mi unuttun?
@@ -158,33 +158,30 @@ const LoginScreen = ({ route, navigation }: any) => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Giriş Butonu */}
                     <View style={styles.buttonContainer}>
                         <CustomButton
                             onPress={handleLogin}
-                            title={mode === 'student' ? "GİRİŞ YAP" : "FİRMA GİRİŞ"}
+                            title={mode === 'student' ? "GİRİŞ YAP" : "GİRİŞ YAP"}
                             activeTheme={currentTheme}
                             isLoading={isLoading}
                             buttonStyle={styles.shadowButton} 
                         />
                     </View>
 
-                    {/* Sosyal Medya Ayırıcı */}
                     <View style={styles.socialSeparator}>
                         <View style={styles.separatorLine} />
-                        <Text style={[styles.separatorText, { color: currentTheme.textSecondary }]}>Veya hızlı giriş yap</Text>
+                        <Text style={[styles.separatorText, { color: currentTheme.textSecondary }]}>Veya</Text>
                         <View style={styles.separatorLine} />
                     </View>
 
-                    {/* SOSYAL MEDYA BUTONLARI */}
+                    {/* SOSYAL MEDYA BUTONLARI - İkonlar kaldırıldı ve ortalandı */}
                     <View style={styles.socialButtonsContainer}>
-                        {/* Google Butonu */}
                         <TouchableOpacity style={[styles.socialIconModern, { borderColor: currentTheme.surface, backgroundColor: '#FFFFFF' }]}>
-                             <Text style={{fontSize: 16, fontWeight: '700'}}>GOOGLE</Text> 
+                             <Text style={{fontSize: 14, fontWeight: '700', color: '#000'}}>GOOGLE</Text> 
                         </TouchableOpacity>
-                        {/* Apple Butonu */}
+                        
                         <TouchableOpacity style={[styles.socialIconModern, { borderColor: currentTheme.surface, backgroundColor: '#FFFFFF' }]}>
-                             <Text style={{fontSize: 16, fontWeight: '700'}}>APPLE</Text> 
+                             <Text style={{fontSize: 14, fontWeight: '700', color: '#000'}}>APPLE</Text> 
                         </TouchableOpacity>
                     </View>
 
@@ -195,10 +192,6 @@ const LoginScreen = ({ route, navigation }: any) => {
     );
 };
 
-// ----------------------------------------------------------------------
-// STYLES
-// ----------------------------------------------------------------------
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -207,7 +200,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center', 
         paddingHorizontal: 24,
-        paddingTop: 10, 
     } as ViewStyle,
     forgotRegisterRow: {
         flexDirection: 'row',
@@ -216,17 +208,17 @@ const styles = StyleSheet.create({
         marginBottom: 20, 
     } as ViewStyle,
     registerLinkText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
     } as TextStyle,
     segmentControlContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%',
-        backgroundColor: '#E5E7EB',
+        backgroundColor: 'rgba(0,0,0,0.05)',
         borderRadius: 15,
         padding: 3,
-        marginBottom: 20, 
+        marginBottom: 30, 
     } as ViewStyle,
     segmentButton: {
         flex: 1,
@@ -237,70 +229,72 @@ const styles = StyleSheet.create({
     } as ViewStyle,
     segmentText: {
         fontWeight: '700',
-        fontSize: 13,
+        fontSize: 12,
     } as TextStyle,
     headerContainer: {
         alignItems: 'center',
         marginBottom: 30, 
     },
     logoPlaceholder: {
-        width: 60, 
-        height: 60,
-        borderRadius: 30, 
+        width: 70, 
+        height: 70,
+        borderRadius: 35, 
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 15,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     welcomeText: {
         fontSize: 24, 
         fontWeight: '800', 
-        marginBottom: 4, 
+        marginBottom: 8, 
         textAlign: 'center',
     },
     subText: {
         fontSize: 14,
         textAlign: 'center',
-        lineHeight: 18,
+        lineHeight: 20,
+        paddingHorizontal: 20,
     },
     formContainer: {
         marginBottom: 5,
     },
     inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         borderRadius: 12, 
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        height: 56,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: 'rgba(0,0,0,0.05)', 
     },
     inputModern: { 
-        fontSize: 16,
+        flex: 1,
+        fontSize: 15,
         fontWeight: '500',
-        padding: 0, 
-        height: 20, 
     } as TextStyle,
     forgotPassContainer: {
         alignItems: 'flex-end', 
     },
     forgotPassText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
     },
     buttonContainer: {
-        marginTop: 0,
+        marginTop: 10,
         marginBottom: 20, 
     },
     shadowButton: {
         shadowColor: "#7C3AED", 
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 10,
-        elevation: 10,
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     } as ViewStyle,
     socialSeparator: {
         flexDirection: 'row',
@@ -310,23 +304,23 @@ const styles = StyleSheet.create({
     separatorLine: {
         flex: 1,
         height: 1,
-        backgroundColor: 'rgba(0,0,0,0.1)',
+        backgroundColor: 'rgba(0,0,0,0.08)',
     } as ViewStyle,
     separatorText: {
-        marginHorizontal: 10,
-        fontSize: 13,
+        marginHorizontal: 15,
+        fontSize: 12,
+        fontWeight: '600',
     } as TextStyle,
     socialButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%',
-        marginBottom: 10,
     } as ViewStyle,
     socialIconModern: {
         borderWidth: 1,
         borderRadius: 12, 
         width: '48%',
-        height: 45,
+        height: 50,
         alignItems: 'center',
         justifyContent: 'center',
         borderColor: 'rgba(0,0,0,0.1)', 
