@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, SafeAreaView, StatusBar, Switch, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, SafeAreaView, StatusBar, Image } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import auth from '@react-native-firebase/auth';
 import { updateUserProfile, logoutUser } from '../../../services/auth';
@@ -12,7 +12,6 @@ const SettingsScreen = ({ route, navigation }: any) => {
     const [school, setSchool] = useState(currentUser?.school || '');
     const [department, setDepartment] = useState(currentUser?.department || '');
     const [bio, setBio] = useState(currentUser?.bio || '');
-    const [ghostMode, setGhostMode] = useState(currentUser?.ghostMode || false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSave = async () => {
@@ -20,7 +19,7 @@ const SettingsScreen = ({ route, navigation }: any) => {
         try {
             const user = auth().currentUser;
             if (user) {
-                const newData = { name, school, department, bio, ghostMode };
+                const newData = { name, school, department, bio };
                 await updateUserProfile(user.uid, newData);
                 if (onUpdate) onUpdate(newData);
                 Alert.alert('Başarılı', 'Profil güncellendi.');
@@ -48,7 +47,7 @@ const SettingsScreen = ({ route, navigation }: any) => {
                 </View>
 
                 <View style={styles.formContainer}>
-                    {[ {l: 'AD SOYAD', v: name, s: setName}, {l: 'OKUL', v: school, s: setSchool}, {l: 'BÖLÜM', v: department, s: setDepartment} ].map((item, idx) => (
+                    {[{ l: 'AD SOYAD', v: name, s: setName }, { l: 'OKUL', v: school, s: setSchool }, { l: 'BÖLÜM', v: department, s: setDepartment }].map((item, idx) => (
                         <View key={idx} style={[styles.inputContainer, { backgroundColor: activeTheme.surface }]}>
                             <Text style={styles.label}>{item.l}</Text>
                             <TextInput value={item.v} onChangeText={item.s} style={[styles.input, { color: activeTheme.text }]} />
@@ -59,21 +58,10 @@ const SettingsScreen = ({ route, navigation }: any) => {
                         <TextInput value={bio} onChangeText={setBio} multiline style={[styles.input, styles.textAreaInput, { color: activeTheme.text }]} />
                     </View>
 
-                    <View style={[styles.ghostCard, { backgroundColor: activeTheme.surface }]}>
-                        <View style={styles.ghostTextContainer}>
-                            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                <Feather name="eye-off" size={18} color={activeTheme.text} style={{marginRight: 8}} />
-                                <Text style={[styles.ghostTitle, { color: activeTheme.text }]}>Ghost Mode</Text>
-                            </View>
-                            <Text style={[styles.ghostDesc, { color: activeTheme.textSecondary }]}>Anonim takıl.</Text>
-                        </View>
-                        <Switch value={ghostMode} onValueChange={setGhostMode} trackColor={{ false: "#767577", true: activeTheme.primary }} />
-                    </View>
-
                     <CustomButton onPress={handleSave} title="Değişiklikleri Kaydet" activeTheme={activeTheme} isLoading={isLoading} />
-                    
+
                     <TouchableOpacity style={styles.logoutButton} onPress={() => logoutUser()}>
-                        <Feather name="log-out" size={18} color="#FF5252" style={{marginRight: 8}} />
+                        <Feather name="log-out" size={18} color="#FF5252" style={{ marginRight: 8 }} />
                         <Text style={styles.logoutText}>Hesaptan Çıkış Yap</Text>
                     </TouchableOpacity>
                 </View>
@@ -95,10 +83,6 @@ const styles = StyleSheet.create({
     input: { fontSize: 16, fontWeight: '600', padding: 0 },
     textAreaContainer: { height: 100 },
     textAreaInput: { height: 60, textAlignVertical: 'top' },
-    ghostCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18, borderRadius: 16, marginBottom: 30 },
-    ghostTextContainer: { flex: 1 },
-    ghostTitle: { fontWeight: '800', fontSize: 16 },
-    ghostDesc: { fontSize: 12, marginTop: 2 },
     logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, backgroundColor: '#FFEBEE', marginTop: 15 },
     logoutText: { color: '#FF5252', fontWeight: '800', fontSize: 15 }
 });

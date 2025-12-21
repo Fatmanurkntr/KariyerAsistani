@@ -38,7 +38,7 @@ const GUIDE_CONTENTS = {
   interview: {
     title: "Mülakatın Şifreleri",
     icon: "users",
-    color: "#10B981", 
+    color: "#10B981",
     items: [
       { id: 1, text: "Şirketi Araştır: 'Neden biz?' sorusuna verecek cevabın olsun. Vizyonlarını bildiğini göster." },
       { id: 2, text: "STAR Tekniği: Sorulara 'Durum, Görev, Aksiyon, Sonuç' sırasıyla hikayeleştirerek cevap ver." },
@@ -83,7 +83,7 @@ const FeedScreen: React.FC<{ activeTheme: ThemeColors }> = ({ activeTheme }) => 
         })
         .catch(error => console.error("Profil çekme hatası:", error));
     }
-  }, [currentUser]); 
+  }, [currentUser]);
 
   useEffect(() => {
     setIsRecLoading(true);
@@ -135,7 +135,7 @@ const FeedScreen: React.FC<{ activeTheme: ThemeColors }> = ({ activeTheme }) => 
     return score;
   };
 
-  
+
   useEffect(() => {
     if (!currentUser) return;
     const unsubscribe = firestore()
@@ -202,7 +202,7 @@ const FeedScreen: React.FC<{ activeTheme: ThemeColors }> = ({ activeTheme }) => 
           addedAt: firestore.FieldValue.serverTimestamp()
         });
 
-        
+
         await NotificationService.displayImmediateNotification(item.title);
 
         await NotificationService.scheduleSmartNotifications(item);
@@ -212,7 +212,7 @@ const FeedScreen: React.FC<{ activeTheme: ThemeColors }> = ({ activeTheme }) => 
         snapshot.docs.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
 
-        
+
         await NotificationService.cancelNotifications(item.id);
       }
     } catch (error) {
@@ -265,7 +265,7 @@ const FeedScreen: React.FC<{ activeTheme: ThemeColors }> = ({ activeTheme }) => 
           <View>
             <View style={styles.headerTop}>
               <View>
-                <Text style={[styles.greeting, { color: activeTheme?.textSecondary }]}>Tekrar Hoş Geldin</Text>
+                <Text style={[styles.greeting, { color: activeTheme?.textSecondary }]}>Hoş Geldin</Text>
                 <Text style={[styles.title, { color: activeTheme?.text }]}>Kariyerini Şekillendir</Text>
               </View>
               <TouchableOpacity

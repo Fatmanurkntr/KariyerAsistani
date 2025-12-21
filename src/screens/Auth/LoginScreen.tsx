@@ -102,7 +102,7 @@ const LoginScreen = ({ route, navigation }: any) => {
                         />
                     </View>
                     <Text style={[styles.welcomeText, { color: currentTheme.text }]}>
-                        {mode === 'student' ? 'Tekrar Hoş Geldin!' : 'Kurumsal Portal'}
+                        {mode === 'student' ? 'Hoş Geldin!' : 'Kurumsal Portal'}
                     </Text>
                     <Text style={[styles.subText, { color: currentTheme.textSecondary }]}>
                         {mode === 'student'

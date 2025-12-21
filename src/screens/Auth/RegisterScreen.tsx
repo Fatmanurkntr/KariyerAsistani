@@ -11,21 +11,21 @@ import {
     KeyboardAvoidingView,
     Platform,
     StatusBar,
-    ViewStyle, 
-    TextStyle 
+    ViewStyle,
+    TextStyle
 } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import { ThemeColors } from '../../theme/types';
 import { registerUser } from '../../services/auth';
 import { validateEmail, validatePassword } from '../../utils/validation';
-import { AuthMode } from '../../types/auth'; 
+import { AuthMode } from '../../types/auth';
 
 const RegisterScreen = ({ route, navigation }: any) => {
     const activeTheme: ThemeColors = route.params?.activeTheme;
     const initialMode: AuthMode = route.params?.initialMode || 'student';
 
     // --- STATE TANIMLARI ---
-    const [role, setRole] = useState<AuthMode>(initialMode); 
+    const [role, setRole] = useState<AuthMode>(initialMode);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -64,23 +64,23 @@ const RegisterScreen = ({ route, navigation }: any) => {
         try {
             // 3. Verileri Backend'in beklediği formata çeviriyoruz
             // auth.js dosyasındaki registerUser fonksiyonu bu yapıyı bekliyor.
-            const profileData = isStudent 
-                ? { 
+            const profileData = isStudent
+                ? {
                     // ÖĞRENCİ VERİ PAKETİ
-                    name: nameInput, 
-                    surname: surnameInput, 
+                    name: nameInput,
+                    surname: surnameInput,
                     school: '',         // Boş başlatıyoruz (Profilden eklenecek)
                     department: '',     // Boş başlatıyoruz (Profilden eklenecek)
                     role: 'student'
-                  } 
-                : { 
+                }
+                : {
                     // ŞİRKET VERİ PAKETİ
                     companyName: nameInput,    // Inputtaki değeri companyName olarak gönderiyoruz
                     contactName: surnameInput, // Yetkili adı
                     sector: '',         // Boş başlatıyoruz
                     website: '',        // Boş başlatıyoruz
                     role: 'company'
-                  };
+                };
 
             // 4. Servise Gönder
             await registerUser(email, password, role, profileData);
@@ -106,7 +106,7 @@ const RegisterScreen = ({ route, navigation }: any) => {
             let errorMessage = 'Bir hata oluştu.';
             if (error.code === 'auth/email-already-in-use') errorMessage = 'Bu e-posta adresi zaten kullanımda.';
             if (error.code === 'auth/invalid-email') errorMessage = 'Geçersiz e-posta formatı.';
-            
+
             Alert.alert('Kayıt Başarısız', errorMessage);
         }
     };
@@ -144,7 +144,7 @@ const RegisterScreen = ({ route, navigation }: any) => {
                                 style={[
                                     styles.roleButton,
                                     { backgroundColor: role === 'student' ? activeTheme.primary : activeTheme.surface },
-                                    role === 'student' && styles.activeRoleButtonShadow 
+                                    role === 'student' && styles.activeRoleButtonShadow
                                 ]}
                                 onPress={() => {
                                     setRole('student');
@@ -154,7 +154,6 @@ const RegisterScreen = ({ route, navigation }: any) => {
                                 }}
                                 activeOpacity={0.8}
                             >
-                                <Text style={{ fontSize: 24, marginBottom: 5 }}>🎓</Text>
                                 <Text style={[styles.roleText, { color: role === 'student' ? '#FFF' : activeTheme.textSecondary }]}>Öğrenci</Text>
                             </TouchableOpacity>
 
@@ -171,7 +170,7 @@ const RegisterScreen = ({ route, navigation }: any) => {
                                 }}
                                 activeOpacity={0.8}
                             >
-                                <Text style={{ fontSize: 24, marginBottom: 5 }}>💼</Text>
+
                                 <Text style={[styles.roleText, { color: role === 'company' ? '#FFF' : activeTheme.textSecondary }]}>Firma</Text>
                             </TouchableOpacity>
                         </View>
@@ -288,7 +287,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     halfInput: {
-        width: '48%', 
+        width: '48%',
     } as ViewStyle,
     inputContainer: {
         borderRadius: 12,
@@ -309,7 +308,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
         padding: 0,
-        height: 24, 
+        height: 24,
     },
     roleLabel: {
         fontSize: 16,
@@ -331,7 +330,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(0,0,0,0.05)',
     } as ViewStyle,
     activeRoleButtonShadow: {
-        shadowColor: "#7C3AED", 
+        shadowColor: "#7C3AED",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

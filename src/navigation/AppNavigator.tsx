@@ -35,7 +35,7 @@ const AppNavigator = () => {
         return <AuthStack activeTheme={activeTheme} />;
     }
 
-    const isAdmin = (userRole as any) === 'admin' || auth().currentUser?.email === "sevdegulsahin25@gmail.com";
+    const isAdmin = (userRole as any) === 'admin';
 
     return (
         <Stack.Navigator
@@ -55,7 +55,7 @@ const AppNavigator = () => {
                 }}
             </Stack.Screen>
 
-            
+
             <Stack.Screen name="AdminDashboard">
                 {(props) => <AdminDashboardScreen {...props} activeTheme={activeTheme} />}
             </Stack.Screen>
@@ -63,7 +63,7 @@ const AppNavigator = () => {
             <Stack.Screen name="AdminDetail">
                 {(props) => <AdminDetailScreen {...props} activeTheme={activeTheme} />}
             </Stack.Screen>
-            
+
             <Stack.Screen name="ProfileDetail">
                 {(props) => <ProfileScreen {...props} activeTheme={activeTheme} />}
             </Stack.Screen>
