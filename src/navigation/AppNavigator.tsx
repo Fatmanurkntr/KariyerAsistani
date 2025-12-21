@@ -31,7 +31,15 @@ const AppNavigator = () => {
         );
     }
 
-    if (!isAuthenticated) {
+    // --- 🔥 DÜZENLENEN KISIM BAŞLANGIÇ 🔥 ---
+
+    // Kullanıcı var mı ve maili doğrulanmış mı kontrol et
+    const user = auth().currentUser;
+    const isEmailVerified = user?.emailVerified;
+
+    // Eğer giriş yapmamışsa VEYA giriş yapmış ama mailini doğrulamamışsa
+    // Ana ekrana gitmesine izin verme, AuthStack'te tut.
+    if (!isAuthenticated || !isEmailVerified) {
         return <AuthStack activeTheme={activeTheme} />;
     }
 

@@ -89,8 +89,8 @@ const RegisterScreen = ({ route, navigation }: any) => {
 
             // 5. Başarılı Sonuç
             Alert.alert(
-                'Kayıt Başarılı! 🎉',
-                'Hesabınız başarıyla oluşturuldu. Şimdi giriş yapabilirsiniz.',
+                'E-posta Doğrulama',
+                'Lütfen e-posta adresinize gönderilen linke tıklayarak hesabınızı doğrulayın.',
                 [
                     {
                         text: 'Giriş Ekranına Git',
